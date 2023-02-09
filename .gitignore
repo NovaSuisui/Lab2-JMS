@@ -7,3 +7,9 @@
 /Score_producer/build/
 /Score_SyncConsumer/dist/
 /Score_SyncConsumer/build/
+/Prime_Server/nbproject/private/
+/Prime_AsyncClient/nbproject/private/
+/Prime_AsyncClient/dist/
+/Prime_AsyncClient/build/
+/Prime_Server/build/
+/Prime_Server/dist/

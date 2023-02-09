@@ -3,16 +3,16 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package score_producer;
+package prime_asyncclient;
 
-import java.util.Scanner;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import javax.annotation.Resource;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.DeliveryMode;
 import javax.jms.Destination;
 import javax.jms.JMSException;
-import javax.jms.MessageProducer;
+import javax.jms.MessageConsumer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
@@ -20,7 +20,7 @@ import javax.jms.Topic;
 
 /**
  *
- * @author SK
+ * @author sarun
  */
 public class Main {
     @Resource(mappedName = "jms/SimpleJMSTopic")
@@ -30,27 +30,33 @@ public class Main {
     @Resource(mappedName = "jms/SimpleJMSQueue")
     private static Queue queue;
     
-
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
+        String destType = null;
         Connection connection = null;
+        Session session = null;
         Destination dest = null;
-        Scanner in = new Scanner(System.in);
+        MessageConsumer consumer = null;
+        TextListener listener = null;
+        TextMessage message = null;
+        InputStreamReader inputStreamReader = null;
+        char answer = '\0';
 
         if (args.length != 1) {
-            System.err.println("Program takes one arguments : <dest_type>");
+            System.err.println("Program takes one argument : <dest_type>");
             System.exit(1);
         }
 
-        String destType = args[0];
+        destType = args[0];
         System.out.println("Destination type is " + destType);
+
         if (!(destType.equals("queue") || destType.equals("topic"))) {
-            System.err.println("Argument must be \"queue\" or " + "\"topic\"");
+            System.err.println("Argument must be \"queue\" or \"topic\"");
             System.exit(1);
         }
-        
+
         try {
             if (destType.equals("queue")) {
                 dest = (Destination) queue;
@@ -64,25 +70,21 @@ public class Main {
 
         try {
             connection = connectionFactory.createConnection();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            MessageProducer producer = session.createProducer(dest);
-            TextMessage message = session.createTextMessage();
-            producer.setTimeToLive(60000);  //message live is set to 60 seconds
-            
-            int count = 0;
-            String msg = "";
-            System.out.println("Enter Q or q for close program");
-            while (true) {
-                System.out.print("Enter Live Score " + (++count) + " : ");
-                msg = in.nextLine();
-                if(msg.equals("Q") || msg.equals("q"))
-                    break;
-                message.setText(msg);
-                System.out.println("Sending message : " + message.getText());
-                producer.send(message);
+            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+            consumer = session.createConsumer(dest);
+            listener = new TextListener();
+            consumer.setMessageListener(listener);
+            connection.start();
+            System.out.println("To end program, type Q or q, " + "then <return>");
+            inputStreamReader = new InputStreamReader(System.in);
+
+            while (!((answer == 'q') || (answer == 'Q'))) {
+                try {
+                    answer = (char) inputStreamReader.read();
+                } catch (IOException e) {
+                    System.err.println("I/O exception: " + e.toString());
+                }
             }
-            producer.send(session.createMessage());
-            System.out.println("Program is ending");
         } catch (JMSException e) {
             System.err.println("Exception occurred: " + e.toString());
         } finally {
@@ -93,5 +95,5 @@ public class Main {
                 }
             }
         }
-    }   
+    }
 }

@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package score_producer;
+package prime_server;
 
 import java.util.Scanner;
 import javax.annotation.Resource;
@@ -71,9 +71,9 @@ public class Main {
             
             int count = 0;
             String msg = "";
-            System.out.println("Enter Q or q for close program");
+            System.out.print("Enter Q or q for close program");
             while (true) {
-                System.out.print("Enter Live Score " + (++count) + " : ");
+                System.out.print("Enter message " + (++count) + " : ");
                 msg = in.nextLine();
                 if(msg.equals("Q") || msg.equals("q"))
                     break;
