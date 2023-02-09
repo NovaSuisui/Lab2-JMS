@@ -5,88 +5,62 @@
  */
 package prime_asyncclient;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.util.Scanner;
 import javax.annotation.Resource;
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
-import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
+import javax.jms.MessageProducer;
 import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.TextMessage;
-import javax.jms.Topic;
 
 /**
  *
- * @author sarun
+ * @author SK
  */
 public class Main {
-    @Resource(mappedName = "jms/SimpleJMSTopic")
-    private static Topic topic;
     @Resource(mappedName = "jms/ConnectionFactory")
     private static ConnectionFactory connectionFactory;
-    @Resource(mappedName = "jms/SimpleJMSQueue")
+    @Resource(mappedName = "jms/TempQueue")
     private static Queue queue;
-    
     /**
      * @param args the command line arguments
      */
-    public static void main(String[] args) throws IOException {
-        String destType = null;
+    public static void main(String[] args) {
         Connection connection = null;
-        Session session = null;
-        Destination dest = null;
-        MessageConsumer consumer = null;
         TextListener listener = null;
-        TextMessage message = null;
-        InputStreamReader inputStreamReader = null;
-        char answer = '\0';
-
-        if (args.length != 1) {
-            System.err.println("Program takes one argument : <dest_type>");
-            System.exit(1);
-        }
-
-        destType = args[0];
-        System.out.println("Destination type is " + destType);
-
-        if (!(destType.equals("queue") || destType.equals("topic"))) {
-            System.err.println("Argument must be \"queue\" or \"topic\"");
-            System.exit(1);
-        }
-
-        try {
-            if (destType.equals("queue")) {
-                dest = (Destination) queue;
-            } else {
-                dest = (Destination) topic;
-            }
-        } catch (Exception e) {
-            System.err.println("Error setting destination: " + e.toString());
-            System.exit(1);
-        }
-
+        
         try {
             connection = connectionFactory.createConnection();
-            session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            consumer = session.createConsumer(dest);
+            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
             listener = new TextListener();
-            consumer.setMessageListener(listener);
+            Queue replyDest = session.createTemporaryQueue();
+            MessageConsumer responseConsumer = session.createConsumer(replyDest);
+            responseConsumer.setMessageListener(listener);
+            MessageProducer producer = session.createProducer(queue);
+            TextMessage message = session.createTextMessage();
+            message.setJMSReplyTo(replyDest);
+            String correlationId = "12345";
+            message.setJMSCorrelationID(correlationId);
             connection.start();
-            System.out.println("To end program, type Q or q, " + "then <return>");
-            inputStreamReader = new InputStreamReader(System.in);
-
-            while (!((answer == 'q') || (answer == 'Q'))) {
-                try {
-                    answer = (char) inputStreamReader.read();
-                } catch (IOException e) {
-                    System.err.println("I/O exception: " + e.toString());
+            
+            String msg = "";
+            Scanner in = new Scanner(System.in);
+            while(true) {
+                System.out.println("Enter two number. Use \",\" to seperate each number. To end the program press 'q'");
+                msg = in.nextLine();
+                if (msg.equals("q")) {
+                    break;
                 }
+                message.setText(msg);
+                System.out.println("Sending message : " + message.getText());
+                producer.send(message);
             }
+            
         } catch (JMSException e) {
-            System.err.println("Exception occurred: " + e.toString());
+            System.err.println("Exception occurred : " + e.toString());
         } finally {
             if (connection != null) {
                 try {

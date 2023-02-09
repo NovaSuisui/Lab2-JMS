@@ -21,14 +21,20 @@ public class TextListener implements MessageListener {
         try {
             if (message instanceof TextMessage) {
                 msg = (TextMessage) message;
-                System.out.println("Update!! : " + msg.getText());
+                String result[] = msg.getText().split(",");
+                if(result.length == 3){
+                    System.out.println("The number of primes between " + result[0] + " and " + result[1] + " : " + result[2]);
+                }
+                else{
+                    System.out.println(result[0]);
+                }
             } else {
                 System.err.println("Message is not a TextMessage");
             }
         } catch (JMSException e) {
-            System.err.println("JMSException in onMessage(): " + e.toString());
+            System.err.println("JMSException in onMessage() : " + e.toString());
         } catch (Throwable t) {
-            System.err.println("Exception in onMessage():" + t.getMessage());
+            System.err.println("Exception in onMessage() : " + t.getMessage());
         }
     }
     
